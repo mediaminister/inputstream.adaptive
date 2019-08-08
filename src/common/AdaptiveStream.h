@@ -56,6 +56,7 @@ namespace adaptive
     unsigned int getWidth() const { return width_; };
     unsigned int getHeight() const { return height_; };
     unsigned int getBandwidth() const { return bandwidth_; };
+    std::string getPeriodId() const { return current_period_->id_; };
     uint64_t getMaxTimeMs();
 
     unsigned int get_type()const{ return type_; };

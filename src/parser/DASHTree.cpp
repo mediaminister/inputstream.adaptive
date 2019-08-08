@@ -882,15 +882,21 @@ start(void *data, const char *el, const char **attr)
     else if (strcmp(el, "Period") == 0)
     {
       dash->current_period_ = new DASHTree::Period();
-      dash->current_period_->base_url_ = dash->base_url_;
       dash->periods_.push_back(dash->current_period_);
+      dash->current_period_->base_url_ = dash->base_url_;
       dash->period_timelined_ = false;
       dash->current_period_start_ = 0;
 
       for (; *attr;)
       {
-        if (strcmp((const char*)*attr, "start") == 0)
+        if (strcmp((const char*)*attr, "id") == 0) {
+          dash->current_period_->id_ = (const char*)*(attr + 1);        
+        }
+        else if (strcmp((const char*)*attr, "start") == 0)
           AddDuration((const char*)*(attr + 1), dash->current_period_start_, 1);
+        else if (strcmp((const char*)*attr, "duration") == 0) {
+          AddDuration((const char*)*(attr + 1), dash->current_period_->duration_, 1);
+        }
         attr += 2;
       }
 
