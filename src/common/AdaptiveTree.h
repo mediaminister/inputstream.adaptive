@@ -433,7 +433,7 @@ namespace adaptive
     void SetFragmentDuration(const AdaptationSet* adp, const Representation* rep, size_t pos, uint64_t timestamp, uint32_t fragmentDuration, uint32_t movie_timescale);
 
     bool empty(){ return !current_period_ || current_period_->adaptationSets_.empty(); };
-    const AdaptationSet *GetAdaptationSet(unsigned int pos) const { return periods_[0] && pos < periods_[0]->adaptationSets_.size() ? periods_[0]->adaptationSets_[pos] : 0; };
+    const AdaptationSet *GetAdaptationSet(unsigned int pos, unsigned int period) const { return periods_[period] && pos < periods_[period]->adaptationSets_.size() ? periods_[period]->adaptationSets_[pos] : 0; };
     std::mutex &GetTreeMutex() { return treeMutex_; };
     bool HasUpdateThread() const { return updateThread_ != 0 && has_timeshift_buffer_ && updateInterval_ && !update_parameter_.empty(); };
     void RefreshUpdateThread();

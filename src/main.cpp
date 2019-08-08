@@ -2159,7 +2159,7 @@ bool Session::initialize(const std::uint8_t config, uint32_t max_user_bandwidth)
   cdm_sessions_.resize(adaptiveTree_->psshSets_.size());
   memset(&cdm_sessions_.front(), 0, sizeof(CDMSESSION));
 
-  // Try to initialize an SingleSampleDecryptor
+  // Try to initialize a SingleSampleDecrypter
   if (adaptiveTree_->encryptionState_)
   {
     if (license_key_.empty())
@@ -2376,67 +2376,74 @@ bool Session::initialize(const std::uint8_t config, uint32_t max_user_bandwidth)
 
   bool hdcpOverride = kodi::GetSettingBoolean("HDCPOVERRIDE");
 
-  while ((adp = adaptiveTree_->GetAdaptationSet(i++)))
+  for (unsigned int j(0); j < adaptiveTree_->periods_.size(); ++j)
   {
-    if (adp->representations_.empty())
-      continue;
+    printf("Period %s \n", adaptiveTree_->periods_[j]->id_.c_str());
 
-    size_t repId = manual_streams_ ? adp->representations_.size() : 0;
+  
 
-    do {
-      streams_.push_back(new STREAM(*adaptiveTree_, adp->type_));
-      STREAM &stream(*streams_.back());
-      const SSD::SSD_DECRYPTER::SSD_CAPS &caps(GetDecrypterCaps(adp->representations_[0]->get_psshset()));
+    while ((adp = adaptiveTree_->GetAdaptationSet(i++, j)))
+    {
+      if (adp->representations_.empty())
+        continue;
 
-      uint32_t hdcpLimit(caps.hdcpLimit);
-      uint16_t hdcpVersion(caps.hdcpVersion);
+      size_t repId = manual_streams_ ? adp->representations_.size() : 0;
 
-      if (hdcpOverride)
-      {
-        hdcpLimit = 0;
-        hdcpVersion = 99;
-      }
+      do {
+        streams_.push_back(new STREAM(*adaptiveTree_, adp->type_));
+        STREAM &stream(*streams_.back());
+        const SSD::SSD_DECRYPTER::SSD_CAPS &caps(GetDecrypterCaps(adp->representations_[0]->get_psshset()));
 
-      stream.stream_.prepare_stream(adp, GetVideoWidth(), GetVideoHeight(), hdcpLimit, hdcpVersion, min_bandwidth, max_bandwidth, repId, media_headers_);
-      stream.info_.m_flags = INPUTSTREAM_INFO::FLAG_NONE;
-      size_t copySize = adp->name_.size() > 255 ? 255 : adp->name_.size();
-      strncpy(stream.info_.m_name, adp->name_.c_str(), copySize), stream.info_.m_name[copySize] = 0;
+        uint32_t hdcpLimit(caps.hdcpLimit);
+        uint16_t hdcpVersion(caps.hdcpVersion);
 
-      switch (adp->type_)
-      {
-      case adaptive::AdaptiveTree::VIDEO:
-        stream.info_.m_streamType = INPUTSTREAM_INFO::TYPE_VIDEO;
-        break;
-      case adaptive::AdaptiveTree::AUDIO:
-        stream.info_.m_streamType = INPUTSTREAM_INFO::TYPE_AUDIO;
-        if (adp->impaired_)
-          stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_VISUAL_IMPAIRED;
-        if (adp->default_)
-          stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_DEFAULT;
-        if (adp->original_ || (!ov_audio_.empty() && adp->language_ == ov_audio_))
-          stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_ORIGINAL;
-        break;
-      case adaptive::AdaptiveTree::SUBTITLE:
-        stream.info_.m_streamType = INPUTSTREAM_INFO::TYPE_SUBTITLE;
-        if (adp->forced_)
-          stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_FORCED;
-        if (adp->default_)
-          stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_DEFAULT;
-        break;
-      default:
-        break;
-      }
-      stream.info_.m_pID = i | (repId << 16);
-      strncpy(stream.info_.m_language, adp->language_.c_str(), sizeof(stream.info_.m_language) - 1);
-      stream.info_.m_language[sizeof(stream.info_.m_language) - 1] = 0;
-      stream.info_.m_ExtraData = nullptr;
-      stream.info_.m_ExtraSize = 0;
-      stream.info_.m_features = 0;
-      stream.stream_.set_observer(dynamic_cast<adaptive::AdaptiveStreamObserver*>(this));
+        if (hdcpOverride)
+        {
+          hdcpLimit = 0;
+          hdcpVersion = 99;
+        }
 
-      UpdateStream(stream, caps);
+        stream.stream_.prepare_stream(adp, GetVideoWidth(), GetVideoHeight(), hdcpLimit, hdcpVersion, min_bandwidth, max_bandwidth, repId, media_headers_);
+        stream.info_.m_flags = INPUTSTREAM_INFO::FLAG_NONE;
+        size_t copySize = adp->name_.size() > 255 ? 255 : adp->name_.size();
+        strncpy(stream.info_.m_name, adp->name_.c_str(), copySize), stream.info_.m_name[copySize] = 0;
 
-    } while (repId-- != (manual_streams_? 1 : 0));
+        switch (adp->type_)
+        {
+        case adaptive::AdaptiveTree::VIDEO:
+          stream.info_.m_streamType = INPUTSTREAM_INFO::TYPE_VIDEO;
+          break;
+        case adaptive::AdaptiveTree::AUDIO:
+          stream.info_.m_streamType = INPUTSTREAM_INFO::TYPE_AUDIO;
+          if (adp->impaired_)
+            stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_VISUAL_IMPAIRED;
+          if (adp->default_)
+            stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_DEFAULT;
+          if (adp->original_ || (!ov_audio_.empty() && adp->language_ == ov_audio_))
+            stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_ORIGINAL;
+          break;
+        case adaptive::AdaptiveTree::SUBTITLE:
+          stream.info_.m_streamType = INPUTSTREAM_INFO::TYPE_SUBTITLE;
+          if (adp->forced_)
+            stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_FORCED;
+          if (adp->default_)
+            stream.info_.m_flags |= INPUTSTREAM_INFO::FLAG_DEFAULT;
+          break;
+        default:
+          break;
+        }
+        stream.info_.m_pID = i | (repId << 16);
+        strncpy(stream.info_.m_language, adp->language_.c_str(), sizeof(stream.info_.m_language) - 1);
+        stream.info_.m_language[sizeof(stream.info_.m_language) - 1] = 0;
+        stream.info_.m_ExtraData = nullptr;
+        stream.info_.m_ExtraSize = 0;
+        stream.info_.m_features = 0;
+        stream.stream_.set_observer(dynamic_cast<adaptive::AdaptiveStreamObserver*>(this));
+
+        UpdateStream(stream, caps);
+
+      } while (repId-- != (manual_streams_? 2 : 0));
+    }
   }
   return true;
 }
