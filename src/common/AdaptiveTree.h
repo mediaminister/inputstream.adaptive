@@ -348,9 +348,9 @@ namespace adaptive
       Period(): timescale_(0), duration_(0), startPTS_(0), startNumber_(1) {};
       ~Period() { for (std::vector<AdaptationSet* >::const_iterator b(adaptationSets_.begin()), e(adaptationSets_.end()); b != e; ++b) delete *b; };
       std::vector<AdaptationSet*> adaptationSets_;
-      std::string base_url_;
-      uint32_t timescale_, duration_;
-      uint64_t startPTS_;
+      std::string id_, base_url_;
+      uint32_t timescale_;
+      uint64_t startPTS_, duration_;
       unsigned int startNumber_;
       SPINCACHE<uint32_t> segment_durations_;
       SegmentTemplate segtpl_;
@@ -433,7 +433,7 @@ namespace adaptive
     void SetFragmentDuration(const AdaptationSet* adp, const Representation* rep, size_t pos, uint64_t timestamp, uint32_t fragmentDuration, uint32_t movie_timescale);
 
     bool empty(){ return !current_period_ || current_period_->adaptationSets_.empty(); };
-    const AdaptationSet *GetAdaptationSet(unsigned int pos) const { return current_period_ && pos < current_period_->adaptationSets_.size() ? current_period_->adaptationSets_[pos] : 0; };
+    const AdaptationSet *GetAdaptationSet(unsigned int pos) const { return periods_[0] && pos < periods_[0]->adaptationSets_.size() ? periods_[0]->adaptationSets_[pos] : 0; };
     std::mutex &GetTreeMutex() { return treeMutex_; };
     bool HasUpdateThread() const { return updateThread_ != 0 && has_timeshift_buffer_ && updateInterval_ && !update_parameter_.empty(); };
     void RefreshUpdateThread();
