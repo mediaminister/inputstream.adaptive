@@ -42,6 +42,10 @@ bool WebVTT::Parse(uint64_t pts, uint32_t duration, const void *buffer, size_t b
         cbuf += 4, buffer_size -= 4;
 
       std::string text(cbuf + 12, buffer_size - 12);
+
+      // Trim leading newline
+      text.erase(0, text.find_first_not_of("\n"));
+
       if (m_subTitles.empty() || text != m_subTitles.back().text[0])
       {
         m_subTitles.push_back(SUBTITLE(pts));
